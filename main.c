@@ -4,6 +4,7 @@
 #include <ncurses.h>
 
 const static int HEIGHT = 20, WIDTH = 70;
+const char WALL = '|', CEILING = '_', SPACE = '.', FOOD = '+';
 enum direction {
     UP, DOWN, RIGHT, LEFT
 };
@@ -30,15 +31,15 @@ void set_direction() {
 void init_board(char *board) {
     for (int i = 0; i < HEIGHT; i++) {
         for (int j = 0; j < WIDTH; j++) {
-            char wall;
+            char temp;
             if (j == 0 || j == WIDTH - 1) {
-                wall = '|';
+                temp = WALL;
             } else if (i == 0 || i == HEIGHT - 1) {
-                wall = '-';
+                temp = CEILING;
             } else {
-                wall = ' ';
+                temp = SPACE;
             }
-            board[(WIDTH * i) + j] = wall;
+            board[(WIDTH * i) + j] = temp;
         }
     }
 }
@@ -75,7 +76,7 @@ int main() {
     char in;
     int i = 0;
 
-    while (i < 100) {
+    while (1) {
         i++;
         print_board(board);
         sleep(1);
