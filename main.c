@@ -1,35 +1,28 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <pthread.h>
+#include <ncurses.h>
 
 const static int HEIGHT = 20, WIDTH = 70;
+const char WALL = '|', CEILING = '_', SPACE = '.', FOOD = '+';
+char endGame = ' ';
 enum direction {
     UP, DOWN, RIGHT, LEFT
 };
 enum direction current_dir = UP;
 
 _Noreturn void *read_input(void *arg) {
-    while (1) {
-        char temp = (char) getchar();
-        switch (temp) {
-            case 'w':
-                current_dir = UP;
-                break;
-            case 'a':
-                current_dir = LEFT;
-                break;
-            case 'd':
-                current_dir = RIGHT;
-                break;
-            case 's':
-                current_dir = DOWN;
-                break;
-        }
-        usleep(500);
+
+
+    char temp = ' ';
+    while (temp != 'q') {
+         temp = getch();
+        printf("%c\n", temp);
 
 
     }
+    endGame = 'q';
+    endwin();
     pthread_exit(NULL);
 }
 
@@ -40,29 +33,44 @@ void set_direction() {
 void init_board(char *board) {
     for (int i = 0; i < HEIGHT; i++) {
         for (int j = 0; j < WIDTH; j++) {
-            char wall;
+            char temp;
             if (j == 0 || j == WIDTH - 1) {
-                wall = '|';
+                temp = WALL;
             } else if (i == 0 || i == HEIGHT - 1) {
-                wall = '-';
+                temp = CEILING;
             } else {
-                wall = ' ';
+                temp = SPACE;
             }
-            board[(WIDTH * i) + j] = wall;
+            board[(WIDTH * i) + j] = temp;
         }
     }
 }
 
 void print_board(char *board) {
+    clear();
     for (int i = 0; i < HEIGHT; i++) {
         for (int j = 0; j < WIDTH; j++) {
-            printf("%c", board[(WIDTH * i) + j]);
+            printw("%c", board[(WIDTH * i) + j]);
         }
-        printf("\n");
+        printw("\n");
     }
 }
 
+void spawn_food(char *board){
+    srand(time(NULL));
+    int xPos = (1 + random()) % (WIDTH - 1);
+    int yPos = (1 + random()) % (HEIGHT - 1);
+
+    board[(WIDTH * yPos) + xPos] = FOOD;
+}
+
 int main() {
+
+    initscr();
+    cbreak();
+    noecho();
+    keypad(stdscr, TRUE);
+    int iteration = 0;
     char *board = (char *) malloc(sizeof(char) * HEIGHT * WIDTH);
     pthread_t pthread;
     int ret;
@@ -77,12 +85,14 @@ int main() {
     char in;
     int i = 0;
 
-    while (i < 100) {
+    while (endGame != 'q') {
         i++;
-        system("cls");
         print_board(board);
-        printf("%d\n", current_dir);
+        printw("%d\n", i);
         sleep(1);
+        spawn_food(board);
+        refresh();
+
     };
     pthread_join(pthread, NULL);
 
