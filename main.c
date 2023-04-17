@@ -5,6 +5,7 @@
 
 const static int HEIGHT = 20, WIDTH = 70;
 const char WALL = '|', CEILING = '_', SPACE = '.', FOOD = '+';
+char endGame = ' ';
 enum direction {
     UP, DOWN, RIGHT, LEFT
 };
@@ -20,6 +21,7 @@ _Noreturn void *read_input(void *arg) {
 
 
     }
+    endGame = 'q';
     endwin();
     pthread_exit(NULL);
 }
@@ -52,7 +54,14 @@ void print_board(char *board) {
         }
         printw("\n");
     }
-    refresh();
+}
+
+void spawn_food(char *board){
+    srand(time(NULL));
+    int xPos = (1 + random()) % (WIDTH - 1);
+    int yPos = (1 + random()) % (HEIGHT - 1);
+
+    board[(WIDTH * yPos) + xPos] = FOOD;
 }
 
 int main() {
@@ -61,7 +70,7 @@ int main() {
     cbreak();
     noecho();
     keypad(stdscr, TRUE);
-
+    int iteration = 0;
     char *board = (char *) malloc(sizeof(char) * HEIGHT * WIDTH);
     pthread_t pthread;
     int ret;
@@ -76,10 +85,14 @@ int main() {
     char in;
     int i = 0;
 
-    while (1) {
+    while (endGame != 'q') {
         i++;
         print_board(board);
+        printw("%d\n", i);
         sleep(1);
+        spawn_food(board);
+        refresh();
+
     };
     pthread_join(pthread, NULL);
 
