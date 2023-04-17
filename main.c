@@ -6,6 +6,7 @@
 const static int HEIGHT = 20, WIDTH = 70;
 const char WALL = '|', CEILING = '_', SPACE = '.', FOOD = '+';
 char endGame = ' ';
+char* board;
 
 enum direction {
     UP, DOWN, RIGHT, LEFT
@@ -40,6 +41,11 @@ _Noreturn void *read_input(void *arg) {
     pthread_exit(NULL);
 }
 
+
+void player_grow(int* pos_alt, char* board){
+    board[(WIDTH * pos_alt[1]) + pos_alt[0]] = '#';
+}
+
 void move_player(char *board, int* pos, int* alt_pos){
     alt_pos[1] = pos[1];
     alt_pos[0] = pos[0];
@@ -65,10 +71,12 @@ void move_player(char *board, int* pos, int* alt_pos){
     }
     board[(WIDTH * pos[1]) + pos[0]] = '@';
     board[(WIDTH * alt_pos[1]) + alt_pos[0]] = ' ';
-
+    player_grow(alt_pos, board);
 }
 
-void init_board(char *board) {
+
+
+void init_board() {
     for (int i = 0; i < HEIGHT; i++) {
         for (int j = 0; j < WIDTH; j++) {
             char temp;
@@ -84,7 +92,7 @@ void init_board(char *board) {
     }
 }
 
-void print_board(char *board) {
+void print_board() {
     clear();
     for (int i = 0; i < HEIGHT; i++) {
         for (int j = 0; j < WIDTH; j++) {
@@ -102,23 +110,34 @@ void spawn_food(char *board){
     board[(WIDTH * yPos) + xPos] = FOOD;
 }
 
+
+_Noreturn void *graph_update(void *arg){
+    while(endGame != 'q'){
+        print_board();
+        usleep(500000);
+    }
+    pthread_exit(NULL);
+}
+
 int main() {
 
     initscr();
     cbreak();
     noecho();
     keypad(stdscr, TRUE);
-    char *board = (char *) malloc(sizeof(char) * HEIGHT * WIDTH);
-    pthread_t pthread;
+
+    board = (char *) malloc(sizeof(char) * HEIGHT * WIDTH);
+    pthread_t input_thread, graph_thread;
     int ret;
 
-    ret = pthread_create(&pthread, NULL, read_input, NULL);
+    ret = pthread_create(&input_thread, NULL, read_input, NULL);
     if (ret != 0) {
         printf("Error\n");
         return 1;
     }
+    ret = pthread_create(&graph_thread, NULL, graph_update, NULL);
 
-    init_board(board);
+    init_board();
     char in;
     int i = 0;
     int *pos = (int*) malloc(sizeof(int) * 2);
@@ -134,8 +153,9 @@ int main() {
         usleep(500000);
         move_player(board, pos, alt_pos);
     };
-    pthread_join(pthread, NULL);
+    pthread_join(input_thread, NULL);
 
+    free(alt_pos);
     free(board);
     free(pos);
     return 0;
