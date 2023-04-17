@@ -3,11 +3,12 @@
 #include <pthread.h>
 #include <ncurses.h>
 
-const static int HEIGHT = 20, WIDTH = 70;
+const static int HEIGHT = 20, WIDTH = 70, REFRESH = 500000;
 const char WALL = '|', CEILING = '_', SPACE = '.', FOOD = '+';
 char endGame = ' ';
 char* board;
-
+int foodCount;
+int* foodPos;
 enum direction {
     UP, DOWN, RIGHT, LEFT
 };
@@ -45,7 +46,14 @@ _Noreturn void *read_input(void *arg) {
 void player_grow(int* pos_alt, char* board){
     board[(WIDTH * pos_alt[1]) + pos_alt[0]] = '#';
 }
+void spawn_food(char *board){
+    foodCount++;
+    srand(time(NULL));
+    foodPos[0] = (1 + random()) % (WIDTH - 1);
+    foodPos[1] = (1 + random()) % (HEIGHT - 1);
 
+    board[(WIDTH * foodPos[1]) + foodPos[0]] = FOOD;
+}
 void move_player(char *board, int* pos, int* alt_pos){
     alt_pos[1] = pos[1];
     alt_pos[0] = pos[0];
@@ -69,12 +77,13 @@ void move_player(char *board, int* pos, int* alt_pos){
         endGame = 'q';
         return;
     }
+    if(pos[0] == foodPos[0] && pos[1] == foodPos[1]){
+        spawn_food(board);
+    }
     board[(WIDTH * pos[1]) + pos[0]] = '@';
     board[(WIDTH * alt_pos[1]) + alt_pos[0]] = ' ';
     player_grow(alt_pos, board);
 }
-
-
 
 void init_board() {
     for (int i = 0; i < HEIGHT; i++) {
@@ -102,19 +111,14 @@ void print_board() {
     }
 }
 
-void spawn_food(char *board){
-    srand(time(NULL));
-    int xPos = (1 + random()) % (WIDTH - 1);
-    int yPos = (1 + random()) % (HEIGHT - 1);
 
-    board[(WIDTH * yPos) + xPos] = FOOD;
-}
 
 
 _Noreturn void *graph_update(void *arg){
     while(endGame != 'q'){
         print_board();
-        usleep(500000);
+        refresh();
+        usleep(REFRESH);
     }
     pthread_exit(NULL);
 }
@@ -142,19 +146,17 @@ int main() {
     int i = 0;
     int *pos = (int*) malloc(sizeof(int) * 2);
     int *alt_pos = (int*) malloc(sizeof (int)*2);
+    foodPos = (int*) malloc(sizeof (int) * 2);
     pos[1] = HEIGHT / 2;
     pos[0] = WIDTH / 2;
+    spawn_food(board);
     while (endGame != 'q') {
         i++;
-        print_board(board);
-        printw("%d\t%d\n", i, current_dir);
-        spawn_food(board);
-        refresh();
-        usleep(500000);
         move_player(board, pos, alt_pos);
+        usleep(REFRESH);
     };
     pthread_join(input_thread, NULL);
-
+    pthread_join(graph_thread, NULL);
     free(alt_pos);
     free(board);
     free(pos);
