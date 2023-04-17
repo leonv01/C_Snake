@@ -1,7 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <pthread.h>
+#include <ncurses.h>
 
 const static int HEIGHT = 20, WIDTH = 70;
 enum direction {
@@ -10,26 +10,16 @@ enum direction {
 enum direction current_dir = UP;
 
 _Noreturn void *read_input(void *arg) {
-    while (1) {
-        char temp = (char) getchar();
-        switch (temp) {
-            case 'w':
-                current_dir = UP;
-                break;
-            case 'a':
-                current_dir = LEFT;
-                break;
-            case 'd':
-                current_dir = RIGHT;
-                break;
-            case 's':
-                current_dir = DOWN;
-                break;
-        }
-        usleep(500);
+
+
+    char temp = ' ';
+    while (temp != 'q') {
+         temp = getch();
+        printf("%c\n", temp);
 
 
     }
+    endwin();
     pthread_exit(NULL);
 }
 
@@ -54,15 +44,23 @@ void init_board(char *board) {
 }
 
 void print_board(char *board) {
+    clear();
     for (int i = 0; i < HEIGHT; i++) {
         for (int j = 0; j < WIDTH; j++) {
-            printf("%c", board[(WIDTH * i) + j]);
+            printw("%c", board[(WIDTH * i) + j]);
         }
-        printf("\n");
+        printw("\n");
     }
+    refresh();
 }
 
 int main() {
+
+    initscr();
+    cbreak();
+    noecho();
+    keypad(stdscr, TRUE);
+
     char *board = (char *) malloc(sizeof(char) * HEIGHT * WIDTH);
     pthread_t pthread;
     int ret;
@@ -79,9 +77,7 @@ int main() {
 
     while (i < 100) {
         i++;
-        system("cls");
         print_board(board);
-        printf("%d\n", current_dir);
         sleep(1);
     };
     pthread_join(pthread, NULL);
