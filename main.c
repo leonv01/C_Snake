@@ -3,12 +3,15 @@
 #include <pthread.h>
 #include <ncurses.h>
 
-const static int HEIGHT = 20, WIDTH = 70, REFRESH = 500000;
-const char WALL = '|', CEILING = '_', SPACE = '.', FOOD = '+';
+static int HEIGHT, WIDTH;
+const static int REFRESH = 250000;
+const static char WALL = '|', CEILING = '_', SPACE = '.', FOOD = '+';
 char endGame = ' ';
 char* board;
-int foodCount;
+int* player;
+int length;
 int* foodPos;
+
 enum direction {
     UP, DOWN, RIGHT, LEFT
 };
@@ -35,54 +38,68 @@ _Noreturn void *read_input(void *arg) {
                 current_dir = current_dir;
                 break;
         }
-
     }
     endGame = 'q';
     endwin();
     pthread_exit(NULL);
 }
 
-
-void player_grow(int* pos_alt, char* board){
-    board[(WIDTH * pos_alt[1]) + pos_alt[0]] = '#';
+void player_grow(char* board){
+    length++;
+    //board[(WIDTH * pos_alt[1]) + pos_alt[0]] = '#';
+    
 }
+
 void spawn_food(char *board){
-    foodCount++;
+    length++;
     srand(time(NULL));
     foodPos[0] = (1 + random()) % (WIDTH - 1);
     foodPos[1] = (1 + random()) % (HEIGHT - 1);
 
     board[(WIDTH * foodPos[1]) + foodPos[0]] = FOOD;
 }
-void move_player(char *board, int* pos, int* alt_pos){
-    alt_pos[1] = pos[1];
-    alt_pos[0] = pos[0];
+
+void move_player(char *board, int *playerPos){
+    int deltaHeadX = playerPos[0];
+    int deltaHeadY = playerPos[1];
+   
     switch (current_dir) {
         case UP:
-            pos[1]--;
+            playerPos[1]--;
             break;
         case DOWN:
-            pos[1]++;
+            playerPos[1]++;
             break;
         case LEFT:
-            pos[0]--;
+            playerPos[0]--;
             break;
         case RIGHT:
-            pos[0]++;
+            playerPos[0]++;
             break;
         default:
             break;
     }
-    if((pos[0] == 0 || pos[0] == WIDTH) || (pos[1] == 0 || pos[1] == HEIGHT)){
-        endGame = 'q';
-        return;
+
+    if(playerPos[0] == foodPos[0] && playerPos[1] == foodPos[1]){
+	   spawn_food(board);
     }
-    if(pos[0] == foodPos[0] && pos[1] == foodPos[1]){
-        spawn_food(board);
+    board[(WIDTH * playerPos[1]) + playerPos[0]] = '@';
+
+    for(int i = 1; i <= length; i++){
+	int temp = (i * 2);
+	int deltaTailX = playerPos[temp];
+	int deltaTailY = playerPos[temp+1];
+
+	playerPos[temp] = deltaHeadX;
+	playerPos[temp+1] = deltaHeadY;
+
+	board[(WIDTH * deltaTailY) + deltaTailX] = '#';
+	
+	deltaHeadX = deltaTailX;
+	deltaHeadY = deltaTailY;
     }
-    board[(WIDTH * pos[1]) + pos[0]] = '@';
-    board[(WIDTH * alt_pos[1]) + alt_pos[0]] = ' ';
-    player_grow(alt_pos, board);
+
+    player_grow(board);
 }
 
 void init_board() {
@@ -109,10 +126,10 @@ void print_board() {
         }
         printw("\n");
     }
+    for(int i = 0; i < length; i++){
+	
+    }
 }
-
-
-
 
 _Noreturn void *graph_update(void *arg){
     while(endGame != 'q'){
@@ -123,16 +140,27 @@ _Noreturn void *graph_update(void *arg){
     pthread_exit(NULL);
 }
 
-int main() {
-
+int main(int argc, char** argv) {
+    if(argc > 2){
+	HEIGHT = atoi(argv[0]);
+	WIDTH = atoi(argv[1]);
+    }
+    else{
+	HEIGHT = 20;
+	WIDTH = 40;
+    }
     initscr();
     cbreak();
     noecho();
     keypad(stdscr, TRUE);
 
     board = (char *) malloc(sizeof(char) * HEIGHT * WIDTH);
+    player = (int *) malloc((sizeof(int) * 2) * HEIGHT * WIDTH);
     pthread_t input_thread, graph_thread;
     int ret;
+
+    player[0] = HEIGHT / 2;
+    player[1] = WIDTH / 2;
 
     ret = pthread_create(&input_thread, NULL, read_input, NULL);
     if (ret != 0) {
@@ -140,25 +168,28 @@ int main() {
         return 1;
     }
     ret = pthread_create(&graph_thread, NULL, graph_update, NULL);
+    if (ret != 0){
+	printf("Error\n");
+	return 1;
+    }	
 
     init_board();
+
     char in;
     int i = 0;
-    int *pos = (int*) malloc(sizeof(int) * 2);
-    int *alt_pos = (int*) malloc(sizeof (int)*2);
     foodPos = (int*) malloc(sizeof (int) * 2);
-    pos[1] = HEIGHT / 2;
-    pos[0] = WIDTH / 2;
+
     spawn_food(board);
     while (endGame != 'q') {
         i++;
-        move_player(board, pos, alt_pos);
+        move_player(board, player);
         usleep(REFRESH);
     };
+
     pthread_join(input_thread, NULL);
     pthread_join(graph_thread, NULL);
-    free(alt_pos);
+
     free(board);
-    free(pos);
+
     return 0;
 }
