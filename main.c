@@ -5,7 +5,7 @@
 
 static int HEIGHT, WIDTH;
 const static int REFRESH = 250000;
-const static char WALL = '|', CEILING = '_', SPACE = '.', FOOD = '+';
+const static char WALL = '|', CEILING = '_', SPACE = '.', FOOD = '+', HEAD = '@', TAIL = '#';
 char endGame = ' ';
 char* board;
 int* player;
@@ -45,7 +45,7 @@ _Noreturn void *read_input(void *arg) {
 }
 
 void player_grow(char* board){
-    length++;
+    
     //board[(WIDTH * pos_alt[1]) + pos_alt[0]] = '#';
     
 }
@@ -83,18 +83,22 @@ void move_player(char *board, int *playerPos){
     if(playerPos[0] == foodPos[0] && playerPos[1] == foodPos[1]){
 	   spawn_food(board);
     }
-    board[(WIDTH * playerPos[1]) + playerPos[0]] = '@';
+    board[(WIDTH * playerPos[1]) + playerPos[0]] = HEAD;
 
+    int deltaTailX;	
+    int deltaTailY;
+   
     for(int i = 1; i <= length; i++){
 	int temp = (i * 2);
-	int deltaTailX = playerPos[temp];
-	int deltaTailY = playerPos[temp+1];
+	deltaTailX = playerPos[temp];
+	deltaTailY = playerPos[temp + 1];
 
 	playerPos[temp] = deltaHeadX;
 	playerPos[temp+1] = deltaHeadY;
 
-	board[(WIDTH * deltaTailY) + deltaTailX] = '#';
-	
+	board[(WIDTH * deltaHeadY) + deltaHeadX] = TAIL;
+	board[(WIDTH * deltaTailY) + deltaTailX] = SPACE;
+
 	deltaHeadX = deltaTailX;
 	deltaHeadY = deltaTailY;
     }
@@ -126,9 +130,7 @@ void print_board() {
         }
         printw("\n");
     }
-    for(int i = 0; i < length; i++){
-	
-    }
+    printw("Length: %d\n", length);
 }
 
 _Noreturn void *graph_update(void *arg){
@@ -153,6 +155,8 @@ int main(int argc, char** argv) {
     cbreak();
     noecho();
     keypad(stdscr, TRUE);
+    
+    length = 0;
 
     board = (char *) malloc(sizeof(char) * HEIGHT * WIDTH);
     player = (int *) malloc((sizeof(int) * 2) * HEIGHT * WIDTH);
@@ -190,6 +194,7 @@ int main(int argc, char** argv) {
     pthread_join(graph_thread, NULL);
 
     free(board);
+    free(player);
 
     return 0;
 }
