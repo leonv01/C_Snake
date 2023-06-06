@@ -1,2 +1,3 @@
 main: main.c 
-	gcc -o main main.c -lncurses 
+	gcc -o main main.c -lncurses
+       		
