@@ -20,7 +20,7 @@ enum direction current_dir = UP;
 
 _Noreturn void *read_input(void *arg) {
     char temp = ' ';
-    while (temp != 'q') {
+    while (temp != 'q'||endGame != 'q') {
         temp = getch();
         switch (temp) {
             case 'w':
@@ -30,10 +30,10 @@ _Noreturn void *read_input(void *arg) {
                 current_dir = DOWN;
                 break;
             case 'a':
-                current_dir = LEFT;
+		current_dir = LEFT;
                 break;
             case 'd':
-                current_dir = RIGHT;
+		current_dir = RIGHT;
                 break;
             default:
                 current_dir = current_dir;
@@ -45,14 +45,7 @@ _Noreturn void *read_input(void *arg) {
     pthread_exit(NULL);
 }
 
-void player_grow(char* board){
-    
-    //board[(WIDTH * pos_alt[1]) + pos_alt[0]] = '#';
-    
-}
-
 void spawn_food(char *board){
-    length++;
     srand(time(NULL));
     foodPos[0] = (1 + random()) % (WIDTH - 1);
     foodPos[1] = (1 + random()) % (HEIGHT - 1);
@@ -80,15 +73,17 @@ void move_player(char *board, int *playerPos){
         default:
             break;
     }
-
     if(playerPos[0] == foodPos[0] && playerPos[1] == foodPos[1]){
 	   spawn_food(board);
+	   length++;
     }
+    
+    
     board[(WIDTH * playerPos[1]) + playerPos[0]] = HEAD;
-
+    board[(WIDTH * deltaHeadY) + deltaHeadX] = SPACE;
     int deltaTailX;	
     int deltaTailY;
-   
+    //Tail render
     for(int i = 1; i <= length; i++){
 	int temp = (i * 2);
 	deltaTailX = playerPos[temp];
@@ -97,6 +92,10 @@ void move_player(char *board, int *playerPos){
 	playerPos[temp] = deltaHeadX;
 	playerPos[temp+1] = deltaHeadY;
 
+	if(playerPos[0] == playerPos[temp] && playerPos[1] == playerPos[temp + 1]){
+		endGame = 'q';		
+	}
+
 	board[(WIDTH * deltaHeadY) + deltaHeadX] = TAIL;
 	board[(WIDTH * deltaTailY) + deltaTailX] = SPACE;
 
@@ -104,7 +103,7 @@ void move_player(char *board, int *playerPos){
 	deltaHeadY = deltaTailY;
     }
 
-    player_grow(board);
+    
 }
 
 void init_board() {
@@ -123,15 +122,13 @@ void init_board() {
     }
 }
 
-void print_board() {
-   // wclear(win);
-    
+void print_board() {    
     for (int i = 0; i < HEIGHT; i++) {
         for (int j = 0; j < WIDTH; j++) {
             mvwprintw(win, i, j, "%c", board[(WIDTH * i) + j]);
         }
     }
-    mvwprintw(win, HEIGHT, 0, "Length: %d", length);
+    mvwprintw(win, HEIGHT, 0, "Length: %d", (length * 10));
     wrefresh(win);
 }
 
@@ -146,8 +143,8 @@ _Noreturn void *graph_update(void *arg){
     pthread_exit(NULL);
 }
 
-int main(int argc, char** argv) {
-    if(argc > 2){
+int main(int argc, char* argv[]) {
+    if(argc > 3){
 	HEIGHT = atoi(argv[0]);
 	WIDTH = atoi(argv[1]);
     }
@@ -161,7 +158,7 @@ int main(int argc, char** argv) {
     cbreak();
     noecho();
     nodelay(win, TRUE);
-    //keypad(stdscr, TRUE);
+    
     
     length = 0;
 
