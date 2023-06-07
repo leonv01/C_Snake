@@ -11,6 +11,7 @@ char* board;
 int* player;
 int length;
 int* foodPos;
+WINDOW* win;
 
 enum direction {
     UP, DOWN, RIGHT, LEFT
@@ -123,20 +124,23 @@ void init_board() {
 }
 
 void print_board() {
-    clear();
+   // wclear(win);
+    
     for (int i = 0; i < HEIGHT; i++) {
         for (int j = 0; j < WIDTH; j++) {
-            printw("%c", board[(WIDTH * i) + j]);
+            mvwprintw(win, i, j, "%c", board[(WIDTH * i) + j]);
         }
-        printw("\n");
     }
-    printw("Length: %d\n", length);
+    mvwprintw(win, HEIGHT, 0, "Length: %d", length);
+    wrefresh(win);
 }
 
 _Noreturn void *graph_update(void *arg){
+    initscr();
+    nodelay(stdscr, TRUE);
+
     while(endGame != 'q'){
         print_board();
-        refresh();
         usleep(REFRESH);
     }
     pthread_exit(NULL);
@@ -151,10 +155,13 @@ int main(int argc, char** argv) {
 	HEIGHT = 20;
 	WIDTH = 40;
     }
+
     initscr();
+    win = newwin(HEIGHT + 1, WIDTH, 0, 0);
     cbreak();
     noecho();
-    keypad(stdscr, TRUE);
+    nodelay(win, TRUE);
+    //keypad(stdscr, TRUE);
     
     length = 0;
 
@@ -192,6 +199,9 @@ int main(int argc, char** argv) {
 
     pthread_join(input_thread, NULL);
     pthread_join(graph_thread, NULL);
+
+    delwin(win);
+    endwin();
 
     free(board);
     free(player);
