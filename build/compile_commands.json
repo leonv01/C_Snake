@@ -1,7 +1,0 @@
-[
-{
-  "directory": "/home/leon/C_Snake/build",
-  "command": "/usr/bin/gcc   -g -std=gnu99 -o CMakeFiles/C_Snake.dir/main.c.o -c /home/leon/C_Snake/main.c",
-  "file": "/home/leon/C_Snake/main.c"
-}
-]
