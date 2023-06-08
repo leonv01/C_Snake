@@ -10,7 +10,7 @@ sudo apt-get install libncurses5-dev libncursesw5-dev
 ```
 
 
-###Compilation
+## Compilation
 To compile the program, use the following command:
 ```
 gcc main.c - main -lncurses
