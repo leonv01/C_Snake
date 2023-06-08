@@ -10,20 +10,20 @@ sudo apt-get install libncurses5-dev libncursesw5-dev
 ```
 
 
-##Compilation
+###Compilation
 To compile the program, use the following command:
 ```
 gcc main.c - main -lncurses
 ```
 
-##Usage
+####Usage
 Run the compiled program using the following command:
 ```
 ./main [HEIGHT WIDTH]
 ```
 By default, if no height and width arguments are provided, the game will be displayed in a 20x40 terminal window.
 
-##Controls
+#####Controls
 Use the following keys to control the snake:
 - W: Move up
 - S: Move down
@@ -31,15 +31,15 @@ Use the following keys to control the snake:
 - D: Move right
 - Q: Quit the game
 
-##Gameplay
+#######Gameplay
 - The snake is represented by the `@` symbol, and it starts in the middle of the game board.
 - Move the snake around the board using the control keys.
 - The snake will grow in length whenever it eats a piece of food (`+`).
 - The game ends if the snake hits the walls or collides with itself.
 - The length of the snake is displayed at the bottom of the game board.
 
-##Acknowledgements
+########Acknowledgements
 This Snake game implementation is based on the ncurses library, which provides a convenient way to create terminal-based user interfaces in C.
 
-##License
+########License
 This program is licensed under the **MIT License**. Feel free to modify and distribute it according to the terms of the license.
