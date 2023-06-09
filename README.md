@@ -1,6 +1,6 @@
 # Snake Game with ncurses
 
-This is a simple implementation of the classic Snake game using the ncurses library in C. It allows the player to control a snake using the WASD keys, with the objective of eating food (+) and growing longer withouth hitting the walls or itself.
+This is a simple implementation of the classic Snake game using the ncurses library in C. It allows the player to control a snake using the WASD keys, with the objective of eating food (+) and growing longer without hitting the walls or itself.
 
 ## Prerequisites
 To compile and run this program, you need to have the ncurses library installed on your system. If you're using a Debian-based Linux distribution, you can install it by running the following command:
