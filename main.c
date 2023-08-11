@@ -2,21 +2,31 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <ncurses.h>
+#include <locale.h>
 
-static int HEIGHT, WIDTH;
-const static int REFRESH = 250000;
-const static char WALL = '|', CEILING = '_', SPACE = '.', FOOD = '+', HEAD = '@', TAIL = '#';
-char endGame = ' ';
-char* board;
-int* player;
-int length;
-int* foodPos;
-WINDOW* win;
-
+struct Player{
+    int* x;
+    int* y;
+};
+struct Food{
+    int x;
+    int y;
+};
 enum direction {
     UP, DOWN, RIGHT, LEFT
 };
+
+
+static int HEIGHT, WIDTH;
+const int REFRESH = 250000;
+const char WALL = '|', CEILING = '_', SPACE = '.', FOOD = '+', HEAD = '@', TAIL = '#', EMPTY = '\t';
+char endGame = ' ';
+char* board;
+int length;
+WINDOW* win;
+struct Food* food;
 enum direction current_dir = UP;
+
 
 _Noreturn void *read_input(void *arg) {
     char temp = ' ';
@@ -47,77 +57,66 @@ _Noreturn void *read_input(void *arg) {
 
 void spawn_food(char *board){
     srand(time(NULL));
-    foodPos[0] = (1 + random()) % (WIDTH - 1);
-    foodPos[1] = (1 + random()) % (HEIGHT - 1);
+    food->x = (1 + random()) % (WIDTH - 1);
+    food->y = (1 + random()) % (HEIGHT - 1);
 
-    board[(WIDTH * foodPos[1]) + foodPos[0]] = FOOD;
+    board[(WIDTH * food->y) + food->x] = FOOD;
 }
 
-void move_player(char *board, int *playerPos){
-    int deltaHeadX = playerPos[0];
-    int deltaHeadY = playerPos[1];
+void move_player(char *board, struct Player* playerPos){
+    int deltaHeadX = playerPos->x[0];
+    int deltaHeadY = playerPos->y[0];
    
     switch (current_dir) {
         case UP:
-            playerPos[1]--;
+            playerPos->y[0]--;
             break;
         case DOWN:
-            playerPos[1]++;
+            playerPos->y[0]++;
             break;
         case LEFT:
-            playerPos[0]--;
+            playerPos->x[0]--;
             break;
         case RIGHT:
-            playerPos[0]++;
+            playerPos->x[0]++;
             break;
         default:
             break;
     }
-    if(playerPos[0] == foodPos[0] && playerPos[1] == foodPos[1]){
+    if(playerPos->x[0] == food->x && playerPos->y[0] == food->y){
 	   spawn_food(board);
 	   length++;
     }
     
     
-    board[(WIDTH * playerPos[1]) + playerPos[0]] = HEAD;
+    board[(WIDTH * playerPos->y[0]) + playerPos->x[0]] = HEAD;
     board[(WIDTH * deltaHeadY) + deltaHeadX] = SPACE;
     int deltaTailX;	
     int deltaTailY;
     //Tail render
     for(int i = 1; i <= length; i++){
-	int temp = (i * 2);
-	deltaTailX = playerPos[temp];
-	deltaTailY = playerPos[temp + 1];
+	    deltaTailX = playerPos->x[i];
+	    deltaTailY = playerPos->y[i];
 
-	playerPos[temp] = deltaHeadX;
-	playerPos[temp+1] = deltaHeadY;
+	    playerPos->x[i] = deltaHeadX;
+	    playerPos->y[i] = deltaHeadY;
 
-	if(playerPos[0] == playerPos[temp] && playerPos[1] == playerPos[temp + 1]){
-		endGame = 'q';		
-	}
+	    if(playerPos->x[0] == playerPos->x[i] && playerPos->y[0] == playerPos->y[i]){
+	    	endGame = 'q';		
+	    }
 
-	board[(WIDTH * deltaHeadY) + deltaHeadX] = TAIL;
-	board[(WIDTH * deltaTailY) + deltaTailX] = SPACE;
+	    board[(WIDTH * deltaHeadY) + deltaHeadX] = TAIL;
+	    board[(WIDTH * deltaTailY) + deltaTailX] = SPACE;
 
-	deltaHeadX = deltaTailX;
-	deltaHeadY = deltaTailY;
+	    deltaHeadX = deltaTailX;
+	    deltaHeadY = deltaTailY;
     }
-
-    
 }
 
 void init_board() {
     for (int i = 0; i < HEIGHT; i++) {
         for (int j = 0; j < WIDTH; j++) {
-            char temp;
-            if (j == 0 || j == WIDTH - 1) {
-                temp = WALL;
-            } else if (i == 0 || i == HEIGHT - 1) {
-                temp = CEILING;
-            } else {
-                temp = SPACE;
-            }
-            board[(WIDTH * i) + j] = temp;
+            board[(WIDTH * i) + j] = SPACE;
         }
     }
 }
@@ -152,23 +151,27 @@ int main(int argc, char* argv[]) {
 	HEIGHT = 20;
 	WIDTH = 40;
     }
-
+    setlocale(LC_ALL, "");
     initscr();
     win = newwin(HEIGHT + 1, WIDTH, 0, 0);
     cbreak();
     noecho();
     nodelay(win, TRUE);
     
-    
+    struct Player player;
+    food = malloc(sizeof(uint8_t) * 2);
+
     length = 0;
 
     board = (char *) malloc(sizeof(char) * HEIGHT * WIDTH);
-    player = (int *) malloc((sizeof(int) * 2) * HEIGHT * WIDTH);
     pthread_t input_thread, graph_thread;
     int ret;
 
-    player[0] = HEIGHT / 2;
-    player[1] = WIDTH / 2;
+    player.x = (int*) malloc((sizeof(int) * HEIGHT * WIDTH));
+    player.y = (int*) malloc((sizeof(int) * HEIGHT * WIDTH));
+
+    player.x[0] = WIDTH / 2;
+    player.y[0] = HEIGHT / 2;
 
     ret = pthread_create(&input_thread, NULL, read_input, NULL);
     if (ret != 0) {
@@ -185,12 +188,11 @@ int main(int argc, char* argv[]) {
 
     char in;
     int i = 0;
-    foodPos = (int*) malloc(sizeof (int) * 2);
 
     spawn_food(board);
     while (endGame != 'q') {
         i++;
-        move_player(board, player);
+        move_player(board, &player);
         usleep(REFRESH);
     };
 
@@ -201,7 +203,7 @@ int main(int argc, char* argv[]) {
     endwin();
 
     free(board);
-    free(player);
+    free(food);
 
     return 0;
 }
